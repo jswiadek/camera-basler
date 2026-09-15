@@ -1,0 +1,30 @@
+# Detekcja ciemnej linii menisku
+    _, thresh = cv2.threshold(blurred, 85, 255, cv2.THRESH_BINARY_INV)
+
+    thresh_clean = cv2.bitwise_and(thresh, thresh, mask=roi_mask)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 2))
+    thresh_clean = cv2.morphologyEx(thresh_clean, cv2.MORPH_CLOSE, kernel)
+
+    cv2.imwrite("debug_mask.png", thresh_clean)
+
+    contours, _ = cv2.findContours(
+        thresh_clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    candidates = []
+    for c in contours:
+        x, y, w, h = cv2.boundingRect(c)
+        if w > 15 and h < 25:
+            center_y = y + h / 2.0
+            candidates.append((w, center_y, (x, y, w, h)))
+
+    if candidates:
+        candidates.sort(key=lambda item: item[0], reverse=True)
+        return candidates[0][1], candidates[0][2]
+
+    return None, None
+
+
+if not os.path.exists(IMAGES_DIR):
+    os.makedirs(IMAGES_DIR)
